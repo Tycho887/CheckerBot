@@ -3,6 +3,9 @@ import numpy as np
 import functions as f
 from abc import ABC, abstractmethod
 import datetime
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
 
 class DatabaseManager:
     """A class to manage the database
@@ -115,37 +118,28 @@ class DatabaseManager:
 
         self.conn.commit()
 
-    def get_records(self, user, month=None, limit=None):
+    def get_records(self, user, start_date = None, end_date = None):
 
-        assert month is None or isinstance(month, str), "month must be a string"
-        assert limit is None or isinstance(limit, int), "limit must be an integer"
+        assert start_date is None or isinstance(start_date, str), "start_date must be a string"
+        assert end_date is None or isinstance(end_date, str), "end_date must be a string"
 
         # find the user id
 
         user_id = self.get_user_id(user)
 
-        # if the limit and month are not specified, return all records
-        if limit is None and month is None:
-
+        # find the records for the different cases
+        
+        if start_date is None and end_date is None:
             self.cursor.execute("SELECT * FROM records WHERE user_id=?", (user_id,))
 
-        # if the limit is specified but month is not, return the last n records.
+        elif start_date is not None and end_date is None:
+            self.cursor.execute("SELECT * FROM records WHERE user_id=? AND date>=?", (user_id, start_date))
 
-        elif limit is not None and month is None:
+        elif start_date is None and end_date is not None:
+            self.cursor.execute("SELECT * FROM records WHERE user_id=? AND date<=?", (user_id, end_date))
 
-            self.cursor.execute("SELECT * FROM records WHERE user_id=? ORDER BY date DESC LIMIT ?", (user_id, limit))
-
-        # if the month is specified but the limit is not, return all records from that month
-
-        elif month is not None and limit is None:
-
-            self.cursor.execute("SELECT * FROM records WHERE user_id=? AND date LIKE ?", (user_id, f"{month}%"))
-
-        # if both the month and the limit are specified, return the last n records from that month
-
-        elif month is not None and limit is not None:
-                
-                self.cursor.execute("SELECT * FROM records WHERE user_id=? AND date LIKE ? ORDER BY date DESC LIMIT ?", (user_id, f"{month}%", limit))
+        else:
+            self.cursor.execute("SELECT * FROM records WHERE user_id=? AND date BETWEEN ? AND ?", (user_id, start_date, end_date))
 
         return self.cursor.fetchall()
     
@@ -154,10 +148,43 @@ class DatabaseManager:
         self.cursor.execute("SELECT * FROM users")
 
         return self.cursor.fetchall()
-    
+
     def close(self):
             
             self.conn.close()
+
+    def plot_score_vs_date(self, user, score_type, start_date=None, end_date=None):
+        # Fetch the records
+        records = self.get_records(user, start_date, end_date)
+        
+        # Define the score column names in the order they appear in the database
+        score_columns = ["well_being", "energy", "productivity", "stress", "depression", "score"]
+        
+        # Convert the records to a DataFrame
+        columns = ["id", "user_id", "date"] + score_columns
+        df = pd.DataFrame(records, columns=columns)
+        
+        # Ensure the date column is in datetime format
+        df['date'] = pd.to_datetime(df['date'])
+        
+        # Plot the specified score against the date
+        plt.figure(figsize=(10, 6))
+        sns.lineplot(data=df, x='date', y=score_type)
+        plt.title(f'{score_type.replace("_", " ").title()} over Time for {user}')
+        plt.xlabel('Date')
+        plt.ylabel(score_type.replace("_", " ").title())
+        plt.xticks(rotation=45)
+        plt.tight_layout()
+
+        plt.savefig(f'plots/{user}_{score_type}_vs_date.png')
+
+        plt.show()
+
+# Example usage
+if __name__ == "__main__":
+    db_manager = DatabaseManager()
+    db_manager.close()
+
 
 if __name__ == "__main__":
 
@@ -170,9 +197,13 @@ if __name__ == "__main__":
     db.add_record("Alice", 1, 1, 1, 5, 5)
     db.add_record("Bob", 3, 3, 3, 3, 3)
 
-    print(db.get_records("Alice"))
-    print(db.get_records("Alice", limit=1))
-    print(db.get_records("Alice", month="2021-07"))
-    print(db.get_records("Alice", month="2024-08", limit=2))
+    # print(db.get_records("Alice"))
+    print(db.get_records("Alice", start_date="2024-08-1"))
+    print(db.get_records("Alice", end_date="2021-07-1"))
+    print(db.get_records("Alice", start_date="2024-07-1", end_date="2024-08-7"))
+
+    print(db.get_users())
+
+    db.plot_score_vs_date("Alice", "score")
 
     db.close()
