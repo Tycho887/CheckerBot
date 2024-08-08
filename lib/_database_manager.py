@@ -1,11 +1,8 @@
 import sqlite3
 import numpy as np
-import functions as f
-from abc import ABC, abstractmethod
+import lib._functions as f
 import datetime
-import pandas as pd
-import matplotlib.pyplot as plt
-import seaborn as sns
+import lib._dataExporter as de
 
 class DatabaseManager:
     """A class to manage the database
@@ -40,7 +37,8 @@ class DatabaseManager:
 
     """
 
-    def __init__(self, db_name="database/CheckIn.db"):
+    def __init__(self, db_name="lib/database/CheckIn.db"):
+
         self.conn = sqlite3.connect(db_name)
         self.cursor = self.conn.cursor()
         self.cursor.execute("CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY, name TEXT)")
@@ -54,45 +52,45 @@ class DatabaseManager:
                             depression INTEGER, 
                             score REAL)""")
         
-    def add_user(self, name):
+    def add_user(self, user_id, user_name):
 
         # check if the user already exists
 
-        self.cursor.execute("SELECT * FROM users WHERE name=?", (name,))
+        self.cursor.execute("SELECT * FROM users WHERE id=?", (user_id,))
+
+        # if the user has already opted in, return False
 
         if self.cursor.fetchone() is not None:
-            return
-
-        # find the highest id in the users table
-
-        self.cursor.execute("SELECT MAX(id) FROM users")
-
-        # fetchone returns a tuple, so we need to extract the integer
-
-        user_id = self.cursor.fetchone()[0]
-
-        if user_id is None:
-            user_id = 0
+            return False
         else:
-            user_id += 1
+            user_name = user_name[0].upper() + user_name[1:]
+            self.cursor.execute("INSERT INTO users (id, name) VALUES (?, ?)", (user_id, user_name))
+            self.conn.commit()
+            return True
 
-        # insert the user into the table
+    def remove_user(self, user_id):
 
-        self.cursor.execute("INSERT INTO users (id, name) VALUES (?, ?)", (user_id, name))
+        # check if the user exists
 
-        self.conn.commit()
+        self.cursor.execute("SELECT * FROM users WHERE id=?", (user_id,))
 
-    def get_user_id(self, name):
+        # if the user does not exist, return False
 
-        self.cursor.execute("SELECT id FROM users WHERE name=?", (name,))
+        if self.cursor.fetchone() is None:
+            return False
+        else:
+            self.cursor.execute("DELETE FROM users WHERE id=?", (user_id,))
+            self.conn.commit()
+            return True
 
-        return self.cursor.fetchone()[0]
+    def add_record(self, user_id, well_being, energy, productivity, stress, depression):
 
-    def add_record(self, user, well_being, energy, productivity, stress, depression):
-
-        # find the user id
-
-        user_id = self.get_user_id(user)
+        assert isinstance(user_id, int), "user_id must be an integer"
+        assert isinstance(well_being, int), "well_being must be an integer"
+        assert isinstance(energy, int), "energy must be an integer"
+        assert isinstance(productivity, int), "productivity must be an integer"
+        assert isinstance(stress, int), "stress must be an integer"
+        assert isinstance(depression, int), "depression must be an integer"
 
         # find the date
 
@@ -118,14 +116,12 @@ class DatabaseManager:
 
         self.conn.commit()
 
-    def get_records(self, user, start_date = None, end_date = None):
+        return True
+
+    def get_records(self, user_id, start_date = None, end_date = None):
 
         assert start_date is None or isinstance(start_date, str), "start_date must be a string"
         assert end_date is None or isinstance(end_date, str), "end_date must be a string"
-
-        # find the user id
-
-        user_id = self.get_user_id(user)
 
         # find the records for the different cases
         
@@ -148,62 +144,13 @@ class DatabaseManager:
         self.cursor.execute("SELECT * FROM users")
 
         return self.cursor.fetchall()
+    
+    def get_user_name(self, user_id):
+            
+        self.cursor.execute("SELECT name FROM users WHERE id=?", (user_id,))
+    
+        return self.cursor.fetchone()[0]
 
     def close(self):
             
-            self.conn.close()
-
-    def plot_score_vs_date(self, user, score_type, start_date=None, end_date=None):
-        # Fetch the records
-        records = self.get_records(user, start_date, end_date)
-        
-        # Define the score column names in the order they appear in the database
-        score_columns = ["well_being", "energy", "productivity", "stress", "depression", "score"]
-        
-        # Convert the records to a DataFrame
-        columns = ["id", "user_id", "date"] + score_columns
-        df = pd.DataFrame(records, columns=columns)
-        
-        # Ensure the date column is in datetime format
-        df['date'] = pd.to_datetime(df['date'])
-        
-        # Plot the specified score against the date
-        plt.figure(figsize=(10, 6))
-        sns.lineplot(data=df, x='date', y=score_type)
-        plt.title(f'{score_type.replace("_", " ").title()} over Time for {user}')
-        plt.xlabel('Date')
-        plt.ylabel(score_type.replace("_", " ").title())
-        plt.xticks(rotation=45)
-        plt.tight_layout()
-
-        plt.savefig(f'plots/{user}_{score_type}_vs_date.png')
-
-        plt.show()
-
-# Example usage
-if __name__ == "__main__":
-    db_manager = DatabaseManager()
-    db_manager.close()
-
-
-if __name__ == "__main__":
-
-    db = DatabaseManager()
-
-    db.add_user("Alice")
-    db.add_user("Bob")
-
-    db.add_record("Alice", 5, 5, 5, 1, 1)
-    db.add_record("Alice", 1, 1, 1, 5, 5)
-    db.add_record("Bob", 3, 3, 3, 3, 3)
-
-    # print(db.get_records("Alice"))
-    print(db.get_records("Alice", start_date="2024-08-1"))
-    print(db.get_records("Alice", end_date="2021-07-1"))
-    print(db.get_records("Alice", start_date="2024-07-1", end_date="2024-08-7"))
-
-    print(db.get_users())
-
-    db.plot_score_vs_date("Alice", "score")
-
-    db.close()
+        self.conn.close()
