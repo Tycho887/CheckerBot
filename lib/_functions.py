@@ -2,28 +2,44 @@ import numpy as np
 import sqlite3
 
 
-def score(input_vector):
+def normalize_score(score, min_val, max_val):
+    return (score - min_val) / (max_val - min_val)
 
-    assert isinstance(input_vector, np.ndarray), "input vector must be a numpy array"
-    assert len(input_vector) == 5, "input vector must have 6 elements"
-    # assert all(isinstance(i, int) for i in input_vector), "input vector must contain only integers"
-    assert all(i >= 1 for i in input_vector), "values must be greater than 1"
-    assert all(i <= 5 for i in input_vector), "values must be less than or equal to 5"
-
-    ideal_vector, weights = np.array([5,5,5,1,1]), np.array([5,3,1,1,1])
+def calculate_composite_score(metrics, weights=None):
+    """
+    Calculate a composite score based on the given metrics.
     
-    # the process is split into stages for readability
+    :param metrics: A dictionary containing the metrics.
+    :param weights: A dictionary containing the weights for each metric.
+    :return: A composite score.
+    """
+    
+    # Default weights if none provided
+    if weights is None:
+        weights = {
+            "sentiment": 1.0,
+            "mood": 1.0,
+            "well_being": 1.0,
+            "energy": 1.0,
+            "productivity": 1.0
+        }
+    
+    # Normalize well-being, energy, and productivity (0-1 scale)
+    metrics['well_being'] = normalize_score(metrics['well_being'], 1, 10)
+    metrics['energy'] = normalize_score(metrics['energy'], 1, 10)
+    metrics['productivity'] = normalize_score(metrics['productivity'], 1, 10)
 
-    first = lambda vector: np.linalg.norm(weights * (vector-ideal_vector)) # find the distance
-    second = lambda vector: first(vector) / first(np.array([1,1,1,5,5])) # normalize the distance
-    third = lambda vector: 1-second(vector) # invert the distance
-
-    score_function = lambda vector: 100*(third(vector))**2 # map the values
-
-    return score_function(input_vector)
-
-if __name__ == "__main__":
-    print(score(np.array([5,5,5,1,1],dtype=int))) # 100.0
-    print(score(np.array([5,5,5,5,5],dtype=int))) # 0.0
-    print(score(np.array([2,5,5,5,5],dtype=int))) # 0.0
-    print(score(np.array([1,1,1,5,5],dtype=int))) # 50.0
+    # Calculate the composite score
+    composite_score = (
+        metrics['sentiment'] * weights['sentiment'] +
+        metrics['mood'] * weights['mood'] +
+        metrics['well_being'] * weights['well_being'] +
+        metrics['energy'] * weights['energy'] +
+        metrics['productivity'] * weights['productivity']
+    )
+    
+    # Normalize the composite score to be between 0 and 1
+    max_possible_score = sum(weights.values())
+    composite_score_normalized = composite_score / max_possible_score
+    
+    return composite_score_normalized

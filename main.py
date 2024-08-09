@@ -17,7 +17,7 @@ scheduler = AsyncIOScheduler()
 
 @bot.event
 async def on_ready():
-    # scheduler.start()
+    scheduler.start()
     print(f"Bot is ready, logged in as {bot.user}") 
 
 @bot.command()
@@ -57,14 +57,15 @@ async def send_daily_message():
         if user:
             await user.send(f"Hello {user_name}! How are you feeling today?")
 
-send_daily_message()
 
-# def schedule_daily_message(hour, minute, timezone_str):
-#     timezone = pytz.timezone(timezone_str)
-#     scheduler.add_job(send_daily_message, CronTrigger(hour=hour, minute=minute, timezone=timezone))
 
-# # Schedule the message for 10 PM in a specific timezone, e.g., UTC
-# schedule_daily_message(22, 0, 'Europe/Oslo')
+def schedule_daily_message(hour, minute, timezone_str):
+    print(f"Scheduling daily message at {hour}:{minute} in timezone {timezone_str}")
+    timezone = pytz.timezone(timezone_str)
+    scheduler.add_job(send_daily_message, CronTrigger(hour=hour, minute=minute, timezone=timezone))
+
+# Schedule the message for 10 PM in a specific timezone, e.g., UTC
+schedule_daily_message(13, 58, 'Europe/Oslo')
 
 
 bot.run(DISCORD_BOT_TOKEN)
