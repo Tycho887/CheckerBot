@@ -4,6 +4,20 @@ import re
 client = OpenAI()
 
 def analyse_message_with_LLM(message):
+  """
+  Analyses message using gpt-4o-mini model and returns metrics.
+
+  :param message: The message to be analysed.
+
+  :return: A dictionary containing the following metrics:
+
+  - sentiment: A float between -1.0 (Very Negative) and 1.0 (Very Positive).
+  - mood: A float between 0.0 (Very Bad) and 1.0 (Very Good).
+  - key_topics: A list of key topics mentioned in the message.
+  - well_being: An integer between 1 and 10.
+  - energy: An integer between 1 and 10.
+  - productivity: An integer between 1 and 10.
+  """
 
   assert isinstance(message, str), "Message must be a string."
 

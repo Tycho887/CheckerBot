@@ -1,8 +1,11 @@
 import sqlite3
 import numpy as np
-import lib._functions as f
+import lib.functions as f
 import datetime
-from prompt import analyse_message_with_LLM
+from .LLM_message_analyser import analyse_message_with_LLM
+import pandas as pd
+
+
 class DatabaseManager:
 
     """A class to manage the database
@@ -38,9 +41,9 @@ class DatabaseManager:
                             productivity INT,         -- 0.0 to 10
                             sentiment INT,            -- -1.0 to 1.0
                             mood INT,                 -- 0.0 to 1.0
+                            score REAL,               -- overall score, also normalized 0.0 to 1.0
                             key_topics TEXT,          -- e.g., "work, family, health"
                             message TEXT,             -- the original message
-                            score REAL,               -- overall score, also normalized 0.0 to 1.0
                             FOREIGN KEY(user_id) REFERENCES users(id)
                         );
                         """)
@@ -68,8 +71,14 @@ class DatabaseManager:
 
     def add_record(self, user_id, LLM_response_dict, message):
 
+        assert isinstance(user_id, int), "user_id must be an integer"
+        assert isinstance(LLM_response_dict, dict), "LLM_response_dict must be a dictionary"
+        assert isinstance(message, str), "message must be a string"
+
+        assert len(LLM_response_dict) == 6, "LLM_response_dict must contain 6 keys"
+
         # Find the current date
-        date = datetime.datetime.now().strftime("%Y-%m-%d")
+        date = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
         # Extract the metrics from the LLM response
 
@@ -82,22 +91,22 @@ class DatabaseManager:
 
         # Calculate the overall score
 
-        score = f.calculate_composite_score()
+        score = f.calculate_composite_score(LLM_response_dict)
 
         # Insert the record into the table
         self.cursor.execute("""INSERT INTO records (
-                                user_id, 
-                                date, 
-                                well_being, 
-                                energy, 
-                                productivity, 
-                                sentiment, 
-                                mood, 
-                                key_topics,
-                                message, 
-                                score
-                              ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""", 
-                            (user_id, date, well_being, energy, productivity, sentiment, mood, key_topics, message, score))
+                                        user_id, 
+                                        date, 
+                                        well_being, 
+                                        energy, 
+                                        productivity, 
+                                        sentiment,
+                                        mood,
+                                        score,
+                                        key_topics,
+                                        message 
+                                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""", 
+                            (user_id, date, well_being, energy, productivity, sentiment, mood, score, key_topics, message))
 
         self.conn.commit()
         return True
@@ -115,7 +124,10 @@ class DatabaseManager:
         else:
             self.cursor.execute("SELECT * FROM records WHERE user_id=? AND date BETWEEN ? AND ?", (user_id, start_date, end_date))
 
-        return self.cursor.fetchall()
+        df = pd.DataFrame(self.cursor.fetchall(), columns=['id', 'user_id', 'date', 'well_being', 'energy', 'productivity', 'sentiment', 'mood', 'score', 'key_topics', 'message'])
+        df.set_index('id')
+
+        return df
 
     def get_users(self):
         self.cursor.execute("SELECT * FROM users")
