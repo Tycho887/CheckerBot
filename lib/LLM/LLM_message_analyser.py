@@ -114,5 +114,5 @@ def convert_mood(mood_text):
     }
     return mapping.get(mood_text, 0.5)
 
-print(analyse_message_with_LLM("I had a great day at work today. I'm feeling a bit tired but happy that I completed my project."))
+# print(analyse_message_with_LLM("I had a great day at work today. I'm feeling a bit tired but happy that I completed my project."))
 
