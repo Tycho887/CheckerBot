@@ -16,15 +16,15 @@ metrics = {'sentiment': 0.5,
 
 # Connect to the database
 
-db.add_user(123456, "John")
+# db.add_user(123456, "John")
 
-# Add the record to the database
+# # Add the record to the database
 
-db.add_data_to_records(123456, metrics, message)
+# db.add_data_to_records(123456, metrics, message)
 
 # Plot the score vs. date
 
 print(db.get_last_n_records_for_user(123456, 10, 'energy'))
 
-plot_metric_over_time(123456, 'energy')
-plot_metric_over_time(123456, 'all')
+plot_metric_over_time(1, 'energy')
+plot_metric_over_time(1, 'all')

@@ -47,6 +47,8 @@ async def optin_user(ctx):
     else:
         await ctx.send("User already opted in!")
 
+# To actually opt in the command is: !
+
 @user.command(name="optout")
 async def optout_user(ctx):
     user_id = ctx.author.id
@@ -78,15 +80,16 @@ async def analyse_and_store_response(ctx, *args):
 
 # Command: Get user's data for the last 7 days and display it in a chart
 
-@bot.command(name="myweek")
-async def plot_last_week(ctx, metric='all'):
+@bot.command(name="mymonth")
+async def plot_last_week(ctx, metric='all', days=31):
     user_id = ctx.author.id
-    plot_path = plot_metric_over_time(user_id, metric, days=7)  # Call your plotting function
-    
+    plot_path = plot_metric_over_time(user_id, metric, days=days)  # Call your plotting function
+    logging.info(f"Plotted data for user {ctx.author.name} with ID {user_id}")
     if plot_path:
-        with open(plot_path, 'rb') as f:
-            file = discord.File(f, filename=plot_path.split('/')[-1])  # Send the image with its filename
-            await ctx.send(file=file)
+        await ctx.send(file=discord.File(plot_path))
+        # with open(plot_path, 'rb') as f:
+        #     file = discord.File(f, filename=plot_path.split('/')[-1])  # Send the image with its filename
+        #     await ctx.send(file=file)
     else:
         await ctx.send("No data available for the last 7 days.")
 
