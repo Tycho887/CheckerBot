@@ -76,42 +76,33 @@ def get_users(cursor):
     return cursor.fetchall()
 
 @connect
-def get_records_for_user(cursor, user_id, start_date=None, end_date=None, column=None):
+def get_user_name(cursor, user_id):
+    cursor.execute("SELECT name FROM users WHERE id=?", (user_id,))
+    return cursor.fetchone()[0]
+
+@connect
+def get_last_n_records_for_user(cursor, user_id, limit=10, column=None):
     """
-    Get records data for a user.
-    if start_date is None, the earliest date is selected.
-    if end_date is None, the latest date is selected.
-    if column is None, all columns are selected.
+    Get the last N records data for a user.
+    If column is None, all columns are selected.
 
     user_id: int
-    start_date: str (ISO format)
-    end_date: str (ISO format)
     column: str (well_being, energy, productivity, sentiment, mood, score, message)
+    limit: int (Number of records to retrieve)
     """
-
-    if start_date is None:
-        cursor.execute("SELECT date FROM records WHERE user_id=? ORDER BY date ASC LIMIT 1", (user_id,))
-        start_date = cursor.fetchone()[0]   
-    else:
-        assert isinstance(start_date, str), "Start date must be a string."
-        assert datetime.datetime.fromisoformat(start_date), "Invalid date format."
-
-    if end_date is None:
-        cursor.execute("SELECT date FROM records WHERE user_id=? ORDER BY date DESC LIMIT 1", (user_id,))
-        end_date = cursor.fetchone()[0]
-    else:
-        assert isinstance(end_date, str), "End date must be a string."
-        assert datetime.datetime.fromisoformat(end_date), "Invalid date format."
 
     if column is None:
         column = "*"
     else:
-        assert isinstance(column, str), "Column name must be a string."
+        assert isinstance(column, str), f"Column name must be a string, got {column}."
         assert column in get_fields("records"), "Invalid column name."
 
-    cursor.execute(f"SELECT {column} FROM records WHERE user_id=? AND date BETWEEN ? AND ?", (user_id, start_date, end_date))
+    assert isinstance(limit, int) and limit > 0, "Limit must be a positive integer."
+
+    cursor.execute(f"SELECT {column} FROM records WHERE user_id=? ORDER BY date DESC LIMIT ?", (user_id, limit))
 
     return cursor.fetchall()
+
 
 @connect
 def get_all_records(cursor):

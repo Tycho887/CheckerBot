@@ -24,6 +24,7 @@ db.add_data_to_records(123456, metrics, message)
 
 # Plot the score vs. date
 
-print(db.get_records_for_user(123456))
+print(db.get_last_n_records_for_user(123456, 10, 'energy'))
 
-plot_metric_over_time(db.get_records_for_user(123456), 'energy', "John")
+plot_metric_over_time(123456, 'energy')
+plot_metric_over_time(123456, 'all')

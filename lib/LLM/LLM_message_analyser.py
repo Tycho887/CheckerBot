@@ -52,14 +52,12 @@ def parse_llm_response(response_text):
     # Extract sentiment
     sentiment_match = re.search(r'Sentiment:\s*(Very Negative|Negative|Neutral|Positive|Very Positive)', response_text)
     if sentiment_match:
-        sentiment_text = sentiment_match.group(1)
-        metrics['sentiment'] = convert_sentiment(sentiment_text)
+        metrics['sentiment'] = sentiment_match.group(1)
 
     # Extract mood
     mood_match = re.search(r'Mood:\s*(Very Bad|Bad|Neutral|Good|Very Good)', response_text)
     if mood_match:
-        mood_text = mood_match.group(1)
-        metrics['mood'] = convert_mood(mood_text)
+        metrics['mood'] = mood_match.group(1)
 
     # Extract key topics
     topics_match = re.search(r'Key Topics:\s*(.*)', response_text)
@@ -85,34 +83,11 @@ def parse_llm_response(response_text):
     assert 'energy' in metrics, "Energy must be provided."
     assert 'productivity' in metrics, "Productivity must be provided."
 
-    assert isinstance(metrics['sentiment'], float), "Sentiment must be a float."
-    assert isinstance(metrics['mood'], float), "Mood must be a float."
+    assert isinstance(metrics['sentiment'], str), "Sentiment must be a str."
+    assert isinstance(metrics['mood'], str), "Mood must be a str."
     assert isinstance(metrics['key_topics'], list), "Key topics must be a list."
     assert isinstance(metrics['well_being'], int), "Well-being must be an integer."
     assert isinstance(metrics['energy'], int), "Energy must be an integer."
     assert isinstance(metrics['productivity'], int), "Productivity must be an integer."
 
     return metrics
-
-def convert_sentiment(sentiment_text):
-    mapping = {
-        "Very Negative": -1.0,
-        "Negative": -0.5,
-        "Neutral": 0.0,
-        "Positive": 0.5,
-        "Very Positive": 1.0,
-    }
-    return mapping.get(sentiment_text, 0.0)
-
-def convert_mood(mood_text):
-    mapping = {
-        "Very Bad": 0.0,
-        "Bad": 0.25,
-        "Neutral": 0.5,
-        "Good": 0.75,
-        "Very Good": 1.0,
-    }
-    return mapping.get(mood_text, 0.5)
-
-# print(analyse_message_with_LLM("I had a great day at work today. I'm feeling a bit tired but happy that I completed my project."))
-

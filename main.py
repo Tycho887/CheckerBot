@@ -4,6 +4,7 @@ import logging
 from lib.utility import schedule_daily_message, start_scheduler, get_bot_token, get_public_key
 import lib.database as db
 from lib.LLM import analyse_message_with_LLM
+from lib.plotting import plot_metric_over_time
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -78,8 +79,16 @@ async def analyse_and_store_response(ctx, *args):
 # Command: Get user's data for the last 7 days and display it in a chart
 
 @bot.command(name="myweek")
-
-
+async def plot_last_week(ctx, metric='all'):
+    user_id = ctx.author.id
+    plot_path = plot_metric_over_time(user_id, metric, days=7)  # Call your plotting function
+    
+    if plot_path:
+        with open(plot_path, 'rb') as f:
+            file = discord.File(f, filename=plot_path.split('/')[-1])  # Send the image with its filename
+            await ctx.send(file=file)
+    else:
+        await ctx.send("No data available for the last 7 days.")
 
 
 # Function: Send reminder to all users
@@ -96,7 +105,6 @@ async def send_reminder_to_all_users():
 
 # Schedule the daily reminder at a specific time (e.g., 8:18 PM UTC)
 schedule_daily_message(20, 18, 'Europe/Oslo', send_reminder_to_all_users)
-
 
 
 # Start the bot
