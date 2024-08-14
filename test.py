@@ -24,7 +24,8 @@ metrics = {'sentiment': 0.5,
 
 # Plot the score vs. date
 
-print(db.get_last_n_records_for_user(123456, 10, 'energy'))
 
-plot_metric_over_time(1, 'energy')
-plot_metric_over_time(1, 'all')
+print(db.get_last_n_records_for_user(661596413490102303, 10, 'energy'))
+
+plot_metric_over_time(661596413490102303, 'energy')
+plot_metric_over_time(661596413490102303, 'all')

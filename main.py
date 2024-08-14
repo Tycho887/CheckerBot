@@ -18,6 +18,12 @@ intents = discord.Intents.default()
 intents.message_content = True
 bot = commands.Bot(command_prefix='!', intents=intents)
 
+
+# Basic Command: Ping
+@bot.command(name="ping")
+async def ping_channel(ctx):
+    await ctx.send('Pong!')
+
 # Event: Bot is ready
 @bot.event
 async def on_ready():
@@ -59,11 +65,6 @@ async def optout_user(ctx):
     else:
         await ctx.send("User not found!")
 
-# Basic Command: Ping
-@bot.command(name="ping")
-async def ping_channel(ctx):
-    await ctx.send('Pong!')
-
 # Command: Analyze and store user response
 @bot.command(name="mydaywas")
 async def analyse_and_store_response(ctx, *args):
@@ -84,15 +85,22 @@ async def analyse_and_store_response(ctx, *args):
 async def plot_last_week(ctx, metric='all', days=31):
     user_id = ctx.author.id
     plot_path = plot_metric_over_time(user_id, metric, days=days)  # Call your plotting function
+
+    assert plot_path is not None
+
     logging.info(f"Plotted data for user {ctx.author.name} with ID {user_id}")
     if plot_path:
-        await ctx.send(file=discord.File(plot_path))
-        # with open(plot_path, 'rb') as f:
-        #     file = discord.File(f, filename=plot_path.split('/')[-1])  # Send the image with its filename
-        #     await ctx.send(file=file)
+        with open(plot_path, 'rb') as f:
+            file = discord.File(f, filename=plot_path.split('/')[-1])  # Send the image with its filename
+            await ctx.send(file=file)
     else:
         await ctx.send("No data available for the last 7 days.")
 
+@bot.command(name="incident")
+async def add_incident(ctx, *args):
+    incident = " ".join(args)
+    db.add_incident(ctx.author.id, incident)
+    await ctx.send("Incident added successfully!")
 
 # Function: Send reminder to all users
 async def send_reminder_to_all_users():
@@ -107,7 +115,7 @@ async def send_reminder_to_all_users():
                 logging.error(f"Failed to send reminder to user {user[0]}: {e}")
 
 # Schedule the daily reminder at a specific time (e.g., 8:18 PM UTC)
-schedule_daily_message(20, 18, 'Europe/Oslo', send_reminder_to_all_users)
+schedule_daily_message(22, 0, 'Europe/Oslo', send_reminder_to_all_users)
 
 
 # Start the bot

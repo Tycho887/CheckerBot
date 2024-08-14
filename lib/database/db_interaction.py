@@ -78,10 +78,15 @@ def get_users(cursor):
 @connect
 def get_user_name(cursor, user_id):
     cursor.execute("SELECT name FROM users WHERE id=?", (user_id,))
-    if cursor.fetchone() is None:
-        return None
+
+    fetch = cursor.fetchone()
+
+    if fetch is None:
+        raise Exception("User not found.")
     else:
-        return cursor.fetchone()[0]
+        return fetch[0] 
+        # print(cursor.fetchone())
+        # return cursor.fetchone()[0]
 
 @connect
 def get_last_n_records_for_user(cursor, user_id, limit=10, column=None):

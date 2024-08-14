@@ -119,7 +119,7 @@ def plot_metric_over_time(user_id, metric, days=30):
 
         # Save the plot
         image_name = f'plots/{metric}_over_time.png'
-        plt.savefig(image_name)
+        plt.savefig(image_name, bbox_inches='tight', dpi=512)
         plt.close()
 
         return image_name
